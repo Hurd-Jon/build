@@ -52,7 +52,7 @@ else
   run_date = DateTime.parse(date_parameter)
 end
 
-run_date = DateTime.new(2015,11,27)
+#run_date = DateTime.new(2015,11,27)
 backup_bucket = s3.buckets[BUCKET_NAME]
 backup_prefix = get_backup_prefix(run_date)
 
