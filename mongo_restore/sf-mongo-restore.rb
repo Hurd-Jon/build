@@ -1,9 +1,9 @@
-
 require 'aws-sdk-v1'
 require "awesome_print"
 
 BUCKET_NAME = 'sf-databackup'
-FILE_PREFIX = '/mongolab/rs-ds033190'
+FOLDER = 'mongolab/'
+FILE_PREFIX = "#{FOLDER}rs-ds033190"
 FILE_POSTFIX = '.tgz'
 $download_available = false
 $download_name = ''
@@ -20,23 +20,27 @@ end
 def set_backup_data(file, file_date)
    puts "-- Download candidate found #{file.key}"
    $download_available = true
-   $download_name = file.key
+   $download_full_name = file.key
+   $download_file_name = $download_full_name.gsub(FOLDER,'')
    $download_date = file_date
-   $downloaded_folder_name = file.key.gsub(FILE_POSTFIX,'')
+   $download_folder_name = $download_file_name.gsub(FILE_POSTFIX,'')
 end
 
-# There can be multiple backups in a day - make sure we get the lates
+# There can be multiple backups in a day - make sure we get the latest
 def check_backup(file)
-  puts "-- Checking #{file.key} to see if its the backup we need"
-  cleaned_file_name=file.key.gsub(FILE_PREFIX,'').gsub(FILE_POSTFIX,'')
-  file_date = Date.parse(cleaned_file_name)
+   # we are only interested in .tgz files
+  if file.key.end_with? FILE_POSTFIX
+    puts "-- Checking #{file.key} to see if its the backup we need"
+    cleaned_file_name=file.key.gsub(FILE_PREFIX,'').gsub(FILE_POSTFIX,'')
+    file_date = Date.parse(cleaned_file_name)
 
-  if $download_available
-   if file_date > $download_date
-     set_backup_data(file, file_date)
-   end
-  else
-   set_backup_data(file, file_date)
+    if $download_available
+       if file_date > $download_date
+         set_backup_data(file, file_date)
+       end
+     else
+       set_backup_data(file, file_date)
+    end
   end
 end
 
@@ -52,7 +56,6 @@ else
   run_date = DateTime.parse(date_parameter)
 end
 
-#run_date = DateTime.new(2015,11,27)
 backup_bucket = s3.buckets[BUCKET_NAME]
 backup_prefix = get_backup_prefix(run_date)
 
@@ -65,23 +68,23 @@ end
 
 if $download_available
   client = AWS::S3::Client.new
-  puts "-- Downloading #{$download_name} from bucket #{BUCKET_NAME}"
-  File.open($download_name, 'wb', :encoding => 'BINARY') do |file|
-    client.get_object({ bucket_name: BUCKET_NAME.to_s, key: $download_name }, target: file) do |chunk|
+  puts "-- Downloading #{$download_full_name} from bucket #{BUCKET_NAME}"
+  File.open($download_file_name, 'wb', :encoding => 'BINARY') do |file|
+    client.get_object({ bucket_name: BUCKET_NAME.to_s, key: $download_full_name }, target: file) do |chunk|
       file.write(chunk)
     end
   end
-  puts "-- Unzipping tar file : #{$download_name} --"
-  cmd = "tar -xvzf ./#{$download_name}"
+  puts "-- Unzipping tar file : #{$download_file_name} --"
+  cmd = "tar -xvzf ./#{$download_file_name}"
   system(cmd)
-  puts "-- restoring file to mongo --------------"
-  cmd = "mongorestore --drop ./#{$downloaded_folder_name}"
+  puts "-- restoring file to mongo #{$download_folder_name} --------------"
+  cmd = "mongorestore --drop #{$download_folder_name}"
   system(cmd)
-  puts "-- delete the dump folder to clean up --"
-  cmd= "rm -rf #{$downloaded_folder_name}"
+  puts "-- delete the download folder to clean up --"
+  cmd= "rm -rf #{$download_folder_name}"
   system(cmd)
   puts "-- delete the tar file to clean up -----"
-  cmd = "rm -rf #{$download_name}"
+  cmd = "rm -rf #{$download_file_name}"
   system(cmd)
 else
   puts "-- There are no backups to restore at this point, quitting."
