@@ -3,7 +3,7 @@ require 'aws-sdk-v1'
 require "awesome_print"
 
 BUCKET_NAME = 'sf-databackup'
-FILE_PREFIX = 'rs-ds033190'
+FILE_PREFIX = 'mongolab/rs-ds033190'
 FILE_POSTFIX = '.tgz'
 $download_available = false
 $download_name = ''
