@@ -1,8 +1,7 @@
 require 'aws-sdk-v1'
 require "awesome_print"
 
-s3 = AWS::S3.new
-
+BUCKET_NAME = 'sf-databackup'
 FILE_PREFIX = 'rs-ds033190'
 FILE_POSTFIX = '.tgz'
 $download_available = false
@@ -41,13 +40,12 @@ def check_backup(file)
   end
 end
 
-def download_backup
-  puts "Downloading #{$download_name}"
-end
-
 puts '------------- Checking for new mongo file dumps ------------------------------'
+puts '------------- If a candidate is found it will be restored  -------------------'
+puts '------------- to the mongo instance running on this machine ------------------'
 
-backup_bucket = s3.buckets['sf-databackup']
+s3 = AWS::S3.new
+backup_bucket = s3.buckets[BUCKET_NAME]
 backup_prefix = get_backup_prefix()
 
 puts "Expected Prefix = #{backup_prefix}"
@@ -57,7 +55,11 @@ backup_bucket.objects.with_prefix(backup_prefix).each do |file|
 end
 
 if $download_available
-  download_backup
+  client = Aws::S3::Client.new
+  puts "Downloading #{$download_name}"
+  File.open($download_name, 'wb', :encoding => 'BINARY') do |file|
+    reap = client.get_object({ bucket: BUCKET_NAME, key: $download_name }, target: file)
+  end
 end
 
 puts '------------- Finished checking for new mongo file dumps ---------------------'
