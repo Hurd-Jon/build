@@ -43,7 +43,15 @@ end
 puts '------------- Checking for new mongo file dumps ------------------------------'
 s3 = AWS::S3.new
 
+puts '-- getting run data from command line arguments'
+date_parameter = ARGV[0]
 run_date = DateTime.now
+if date_parameter == 'USE_TODAY' || date_parameter.empty?
+  run_date = DateTime.now
+else
+  run_date = DateTime.parse(date_parameter)
+end
+
 run_date = DateTime.new(2015,11,27)
 backup_bucket = s3.buckets[BUCKET_NAME]
 backup_prefix = get_backup_prefix(run_date)
