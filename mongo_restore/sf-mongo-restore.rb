@@ -1,10 +1,13 @@
 require 'aws-sdk-v1'
 require "awesome_print"
 
+# constants that control the restore process
 BUCKET_NAME = 'sf-databackup'
 FOLDER = 'mongolab/'
 FILE_PREFIX = "#{FOLDER}rs-ds033190"
 FILE_POSTFIX = '.tgz'
+
+# globals that keep track of the download candidate
 $download_available = false
 $download_name = ''
 $download_date = ''
